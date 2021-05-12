@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <string>
 #include <fstream>
+#include <chrono>
 
 using namespace std;
 
@@ -221,6 +222,8 @@ void Graph::relabel(int u) {
 }
 
 int Graph::getMaxFlow(int s, int t) {
+    
+    auto t1 = std::chrono::high_resolution_clock::now();
     preflow(s);
     
     int globalRelabelingInterval = 10;
@@ -239,6 +242,10 @@ int Graph::getMaxFlow(int s, int t) {
         if (!push(u))
             relabel(u);
     }
+    auto t2 = std::chrono::high_resolution_clock::now();
+    
+    auto execTime = duration_cast<std::chrono::nanoseconds>(t2 - t1);
+    cout << execTime.count() << " nanoseconds " << execTime.count() / 1000000000 << " seconds\n";
     
     return vertices.back().e_flow;
 }
@@ -264,41 +271,88 @@ Graph getFromConsole() {
     return g;
 }
 
-vector<string> split(string s, string sep = " ") {
+inline bool space(char c){
+    return std::isspace(c);
+}
+ 
+inline bool notspace(char c){
+    return !std::isspace(c);
+}
+ 
+std::vector<std::string> split(const std::string& s){
+    typedef std::string::const_iterator iter;
+    std::vector<std::string> ret;
+    iter i = s.begin();
+    while(i!=s.end()){
+        i = std::find_if(i, s.end(), notspace);
+        iter j= std::find_if(i, s.end(), space);
+        if(i!=s.end()){
+            ret.push_back(std::string(i, j));
+            i = j;
+        }
+    }
+    return ret;
+}
+
+Graph getFromFile() {
     
-    vector<string> words;
+    string path = "";
     
-    size_t pos = 0;
-    std::string token;
-    while ((pos = s.find(sep)) != std::string::npos) {
-        words.push_back(s.substr(0, pos));
-        s.erase(0, pos + sep.length());
+    Graph g(0);
+    int V = -1;
+    
+    cout << "Введите имя файла:\n>>> ";
+    cin >> path;
+    
+    ifstream file(path);
+    
+    if (file.is_open()) {
+        string line = "";
+        
+        getline(file, line);
+        vector<string> words = split(line);
+        V = stoi(words[0]);
+        g = Graph(V);
+        
+        
+        while (getline(file, line)) {
+            words = split(line);
+            int u = stoi(words[0])-1;
+            int v = stoi(words[1])-1;
+            int capacity = stoi(words[2]);
+            g.addEdge(u, v, capacity);
+            
+        }
+    } else {
+        throw "WRONG PATH TO THE FILE";
     }
     
-    return words;
+    
+    
+    return g;
 }
 
 Graph menu() {
     
     Graph g(0);
     
-    //    while (true) {
-    //        int option = -1;
-    //        cout << "ОПЦИИ\n" << "1)Ввести ручками\n"<<"2)Скормить файл\n"<<"3)Запустить тесты\n" << ">>> ";
-    //        cin >> option;
-    //
-    //        if (option == 1) {
-    //            return getFromConsole();
-    //        } else if (option == 2) {
-    //            throw "NOT IMPLEMENTED";
-    //        } else if (option == 3) {
-    //            throw "NOT IMPLEMENTED";
-    //        } else {
-    //            cout << "ВВЕДЕНА НЕВЕРНАЯ ОПЦИЯ!\n";
-    //        }
-    //    }
+        while (true) {
+            int option = -1;
+            cout << "ОПЦИИ\n" << "1)Ввести ручками\n"<<"2)Скормить файл\n"<<"3)Запустить тесты\n" << ">>> ";
+            cin >> option;
     
-    return getFromConsole();
+            if (option == 1) {
+                return getFromConsole();
+            } else if (option == 2) {
+                return getFromFile();
+            } else if (option == 3) {
+                throw "NOT IMPLEMENTED";
+            } else {
+                cout << "ВВЕДЕНА НЕВЕРНАЯ ОПЦИЯ!\n";
+            }
+        }
+    
+    return g;
 }
 
 int main() {
@@ -309,4 +363,3 @@ int main() {
     
     return 0;
 }
-
